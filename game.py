@@ -75,7 +75,7 @@ class SnakeGameAI:
         game_over = False
         reward = 0
         # fin de partie s'il y a une collision ou bien si on arrive par a manger la pomme pendant un long temps (selon la longueur du snake)
-        if self._is_collision() or self.frame_iteration > 100*len(self.snake):
+        if self.is_collision() or self.frame_iteration > 100*len(self.snake):
             game_over = True
             reward = -10
             return reward, game_over, self.score
@@ -94,7 +94,7 @@ class SnakeGameAI:
         # 6. return game over and score
         return reward, game_over, self.score
     
-    def _is_collision(self, pt=None): # pt c'est pour pouvoir calculer le danger qui existe dans state
+    def is_collision(self, pt=None): # pt c'est pour pouvoir calculer le danger qui existe dans state
         if pt is None : # pour pouvoir appeler _is_collision sans parametres
             pt = self.head
         # hits boundary
