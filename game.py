@@ -24,7 +24,7 @@ BLUE2 = (0, 100, 255)
 BLACK = (0,0,0)
 
 BLOCK_SIZE = 20
-SPEED = 20
+SPEED = 50
 
 class SnakeGameAI:
     
@@ -122,11 +122,11 @@ class SnakeGameAI:
     def _move(self, action):
         # Extraire la direction actuelle du serpont :
         dir_Possible = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
-        idx_dir_actuelle = dir_Possible(self.direction)
+        idx_dir_actuelle = dir_Possible.index(self.direction)
 
         # Faire un move selon l'action :
         ## si action = [1, 0, 0] => rester dans la meme direction
-        if np.arry_equal(action, [1, 0, 0]):
+        if np.array_equal(action, [1, 0, 0]):
             new_dir = dir_Possible[idx_dir_actuelle]
         ## si action = [0, 1, 0] => tourner a droite 
         elif np.array_equal(action, [0, 1, 0]):

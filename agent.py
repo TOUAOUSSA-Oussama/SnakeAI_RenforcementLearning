@@ -3,6 +3,8 @@ import random
 import numpy as np
 from collections import deque # permet de stocker les donnees (reward, game_over, ...)
 from game import SnakeGameAI, Direction, Point
+from model import Linear_QNet, QTrainer
+from helper import plot
 
 # Fixation de quelque parametres :
 MAX_MEMORY = 100_100 # taille max de deque
@@ -14,10 +16,10 @@ class Agent:
     def __init__(self):
         self.n_games = 0
         self.epsilon = 0 # pour random
-        self.gamma = 0 # = discount rate pour la mise a jour de Q
+        self.gamma = 0.9 # = discount rate pour la mise a jour de Q qui doit etre entre 0 et 1
         self.memory = deque(maxlen=MAX_MEMORY) # lorsque la memoire depasse MAX_MEMORY, deque appelle automatiquement popleft() qui supprime le premier element (le plus ancien) de la deque
-        self.model = None # TODO
-        self.trainer = None # TODO
+        self.model = Linear_QNet(11, 256, 3) # 11 = taille de state, 256 = taille de hidden layer, 3 = taille de l'action
+        self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma) 
 
     # Calculer l'etat de l'agent dans game :
     def get_state(self, game):
@@ -91,32 +93,30 @@ class Agent:
         self.trainer.train_step(states, actions, rewards, next_states, dones)
     
     # train for one game step
+    
     def train_short_memory(self, state, action, reward, next_state, done):
         self.trainer.train_step(state, action, reward, next_state, done)
 
     # Calculer l'action que va faire l'agent a partir d'une etat :
     def get_action(self, state):
         # random moves : tradeoff exploration => sauf au debut tant le modele n'est pas encore bien entrainer
-        self.epsilon = 80 - self.n_games # plus on avance c'est a dire le nombre des jeus augmente plus epsilon devient petit
-        
-        final_move = [0, 0, 0] # initialisation 
-        
-        if random.randint(0, 200) < self.epsilon: 
-        # plus epsilon est petit (c'est a dire n_games est grand), 
-        # plus la proba d'avoir un nombre < a epsilon est petite et 
-        # donc devient moins probable de faire un random move 
-        # si n_games depasse 80, alors epsilon sera negtive et alors on est sur de ne pas
-        # faire un random move   
+        self.epsilon = 80 - self.n_games# plus on avance c'est a dire le nombre des jeus augmente plus epsilon devient petit
+        final_move = [0,0,0]# initialisation
+        if random.randint(0, 200) < self.epsilon:
+            # plus epsilon est petit (c'est a dire n_games est grand), 
+            # plus la proba d'avoir un nombre < a epsilon est petite et 
+            # donc devient moins probable de faire un random move 
+            # si n_games depasse 80, alors epsilon sera negtive et alors on est sur de ne pas
+            # faire un random move 
             move = random.randint(0, 2)
-            final_move[move] = 1 
-        
-        else :
-        # on predit l'action par le modele :
-            state0 = torch.tensor(state, dtype=torch.float)
-            prediction = self.model.predict(state0) # ceci donne un vecteur de proba de taille 3
-            move = torch.argmax(prediction).item() # on extrait l'indice de la case de proba plus grande
             final_move[move] = 1
-        
+        else:
+            # on predit l'action par le modele :
+            state0 = torch.tensor(state, dtype=torch.float)
+            prediction = self.model(state0)# ceci donne un vecteur de proba de taille 3
+            move = torch.argmax(prediction).item()# on extrait l'indice de la case de proba plus grande
+            final_move[move] = 1
+
         return final_move
                  
 
@@ -160,13 +160,17 @@ def train():
             # Verifier si on a obtenu a meilleur score :
             if score > record :
                 record = score
-                # TODO : agent.model.save() # enregistrer le modele obtenu
+                agent.model.save() # enregistrer le modele obtenu
 
             # Afficher les informations liees a cette partie de jeu :
             print('-Game: ', agent.n_games, '-Score: ', score, '-Record: ', record)
 
             # Tracer les courbes pour visualiser l'avancement de l'entrainement :
-            # TODO : plot
+            plot_scores.append(score)
+            total_score += score
+            mean_score = total_score / agent.n_games
+            plot_mean_scores.append(mean_score)
+            plot(plot_scores, plot_mean_scores)
 
 
 if __name__ == "__main__":
